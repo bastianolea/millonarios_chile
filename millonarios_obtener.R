@@ -1,11 +1,16 @@
 library(dplyr)
+library(stringr)
+library(readr)
 options(scipen = 9999)
 
+
+# ranking forbes ----
 # https://www.kaggle.com/datasets/prasertk/forbes-worlds-billionaires-list-2023?resource=download
 # https://www.forbes.com/billionaires/
 
-forbes <- readr::read_csv("forbes_2023_billionaires.csv")
+forbes <- readr::read_csv("datos/forbes_2023_billionaires.csv")
 
+source("precio_dolar.R")
 dolar <- obtener_dolar(scrapear = TRUE)
 
 forbes_chile <- forbes |> 
@@ -20,12 +25,22 @@ forbes_chile_2 <- forbes_chile |>
          fortuna_usd = finalWorth * 1000000,
          fortuna_pesos = fortuna_usd * dolar)
 
-readr::write_csv2(forbes_chile_2, "forbes_2023_chile.csv")
+readr::write_csv2(forbes_chile_2, "datos/forbes_2023_chile.csv")
 
 fortuna <- forbes_chile_2 |> 
-  filter(personName == "Sebastian Piñera & family") |> 
+  filter(nombre == "Sebastian Piñera & family") |> 
   pull(fortuna_pesos)
 
+
+#compilar de otras fuentes ----
+
+millonarios <- readr::read_csv2("datos/millonarios_chile.csv")
+
+millonarios_2 <- millonarios |> 
+  mutate(fortuna_usd = fortuna * 1000000,
+         fortuna_pesos = fortuna_usd * dolar)
+
+write_rds(millonarios_2, "millonarios_chile.rds")
 
 #3 más acá
 # https://www.rankia.cl/blog/mejores-opiniones-chile/2190823-hombres-mas-ricos-chile
@@ -48,5 +63,6 @@ fortuna <- forbes_chile_2 |>
 # Grupo Luksic, el mayor conglomerado económico de Chile. Con una fortuna familiar de US$13 mil 500 millones 
 # https://www.ciperchile.cl/2015/04/23/la-lista-completa-la-verdad-sobre-las-1-123-empresas-que-financian-la-politica-en-chile/
 
-#Familias
-# https://www.elconfidencial.com/alma-corazon-vida/2018-06-29/25-familias-mas-ricas-1-1-billones-de-dolares_1585353/#:~:text=%2DLa%20familia%20Hoffmann.&text=25%2C1%20miles%20de%20millones%20de%20dólares.
+
+# https://www.ciperchile.cl/2020/05/06/los-ricos-los-super-ricos-y-el-financiamiento-de-la-crisis/
+# Unos 5.840 individuos poseen una riqueza total de US$270.000 millones, un 32% de la riqueza privada total de todos los chilenos, cifra equivalente a todo lo que produce el país en 1 año.

@@ -4,6 +4,7 @@ library(shinyWidgets)
 library(readr)
 library(stringr)
 library(thematic)
+library(ggplot2)
 
 color_fondo = "#0D3C67"
 color_texto = "#19C461"
@@ -11,59 +12,92 @@ color_texto = "#19C461"
 color_texto = "#8BD8BD"
 # color_fondo = "#2E3C7E"
 # color_texto = "#FBEAEB"
+color_detalle = "#1a4c70"
+color_detalle = "#387285"
 
 #tema automático
 thematic_shiny(font = "auto", bg = color_fondo, fg = color_texto, accent = color_texto)
+# thematic::thematic_on(bg = color_fondo, fg = color_texto, accent = color_texto)
 
 options(scipen = 9999)
 
-# forbes <- readr::read_csv("forbes_2023_billionaires.csv")
-forbes <- read_csv2("forbes_2023_chile.csv")
+source("funciones.R")
 
-source("precio_dolar.R")
+# millonarios <- readr::read_csv("millonarios_2023_billionaires.csv")
+# millonarios <- read_csv2("millonarios_2023_chile.csv")
+millonarios <- read_rds("millonarios_chile.rds")
+
+
+
 dolar <- obtener_dolar(scrapear = F)
 
-pesos <- function(x) {
-  paste0("$", format(x, big.mark = ".", decimal.mark = ","))
-}
-
-miles <- function(x) {
-  format(x, big.mark = ".", decimal.mark = ",")
-}
 
 
 ui <- fluidPage(
+  title = "Millonarios de Chile",
+  lang = "es",
+  
   theme = bslib::bs_theme(
     bg = color_fondo, fg = color_texto, primary = color_texto,
     # base_font = bslib::font_google("Pacifico")
   ),
   
+  js_ancho_ventana(),
+  
+  css("
+      #edad_laboral {
+      height: 33px; 
+      margin-top: 0;
+      }
+  "),
+  
   fluidRow(
-    column(12,
-           h2("Platita")
+    ##título ----
+    div(style = "padding-top: 12px; padding-bottom: 20px;",
+        
+        titlePanel(h1("Millonarios de Chile"), 
+                   windowTitle = "Millonarios de Chile"),
+        p("Aplicación interactiva sobre las fortunas de los empresarios más ricos de Chile", 
+          style = "margin-bottom: 8px; font-size: 90%;"),
+        em(tags$a("Bastián Olea Herrera", 
+                  href = "http://bastian.olea.biz",
+                  target = "_blank")),
+        hr()
     )
   ),
+  
+  fluidRow(
+    column(12,
+           plotOutput("grafico_millonarios")
+    )
+  ),
+  
+  hr(),
   
   fluidRow(
     column(12,
            pickerInput("millonario", 
-                       "Seleccione un ctm", selected = "Sebastián Piñera",
-                       choices = forbes$nombre),
+                       "Seleccione un ctm", selected = "Sebastián Piñera Echeñique",
+                       choices = millonarios$nombre),
            
-           p("La plata del loco es", textOutput("fortuna", inline = T))
+           p("La plata del loco es de ",
+             textOutput("fortuna_usd", inline = T), "millones de dólares, lo que equivale a",
+             textOutput("fortuna", inline = T), "pesos chilenos")
     )
   ),
   
+  hr(),
+  
   fluidRow(
     column(12,
+           h2("Compara tu sueldo con la fortuna de un multimillonario chileno"),
+           
            numericInput("sueldo", "Ingrese su sueldo aprox", 
                         value = 500000, min = 200000, max = 20000000, step = 100000),
            
            # p("Tu sueldo es", textOutput("texto_sueldo", inline = T)),
            
            p("Al año ganas", textOutput("sueldo_anual", inline = T)),
-           
-           
            
            p("Con su sueldo, tendrías que trabajar", textOutput("dias_trabajando", inline = T), "días hábiles"),
            
@@ -73,27 +107,40 @@ ui <- fluidPage(
            
            p("Con su sueldo, tendrías que trabajar", textOutput("siglos_trabajando", inline = T), "siglos"),
            
-           p("Tendrías que trabajar sin parar, todos los días, hasta el año ", textOutput("año_trabajado_final", inline = T))
+           p("Tendrías que trabajar sin parar, todos los días, hasta el año ", textOutput("año_trabajado_final", inline = T)),
+           
+           hr()
     )
+    
   ),
   
   fluidRow(
     column(12, 
-           radioGroupButtons("genero", "Género", 
-                             choices = c("Femenino", "Masculino")
-           ),
+           h2("¿Cuánto tendrías que trabajar para ser multimillonario?"),
            
-           numericInput("edad_laboral", "A qué edad empezaste a trabajar",
-                        value = 24, min = 10, max = 99, step = 1
+           div(style = "display: inline-block;",
+               
+               div(style = "display: inline-block; padding: 6px;",
+               radioGroupButtons("genero", "Género", 
+                                 choices = c("Femenino", "Masculino"), size = "sm",
+               )),
+               
+               div(style = "display: inline-block; padding: 6px;",
+               numericInput("edad_laboral", "A qué edad empezaste a trabajar",
+                            value = 24, min = 10, max = 99, step = 1
+               ))
            ),
            
            #output
            p("En toda tu vida, vas a ganar", textOutput("sueldo_vital", inline = T)),
-           p("Necesitarías trabajar", 
-             textOutput("vidas_trabajadas", inline = T),
-             "vidas enteras para alcanzar la fortuna de x"),
-           p("considerando que vas a vivir hasta los", textOutput("esperanza_vida", inline = T)),
-           p("Y que tu edad de jubilación será a los", textOutput("edad_jubilacion", inline = T))
+           
+           p("considerando que tu esperanza de vida actual es de", textOutput("esperanza_vida", inline = T), "años,
+           y que tu edad de jubilación será a los", textOutput("edad_jubilacion", inline = T), "años, 
+           necesitarías trabajar", 
+           textOutput("vidas_trabajadas", inline = T),
+           "vidas enteras para alcanzar la fortuna de",
+           textOutput("nombre_millonario", inline = T),
+           ),
     )
   ),
   
@@ -126,16 +173,17 @@ server <- function(input, output) {
   
   
   millonario <- reactive(
-    forbes |> 
+    millonarios |> 
       filter(nombre == input$millonario)
   )
+  output$nombre_millonario <- renderText(input$millonario)
   
   fortuna <- reactive(
     millonario()$fortuna_pesos
   )
   
   output$fortuna <- renderText(pesos(fortuna()))
-  
+  output$fortuna_usd <- renderText(pesos(millonario()$fortuna))
   output$fortuna_millones <- renderText(pesos(fortuna()/1000000))
   
   
@@ -177,7 +225,7 @@ server <- function(input, output) {
     año = format(Sys.Date(), "%Y")
     año_final <- as.numeric(año) + años_trabajo_individuo()
     miles(as.integer(año_final))
-    })
+  })
   
   
   # vidas trabajadas ----
@@ -210,6 +258,44 @@ server <- function(input, output) {
   output$vidas_trabajadas <- renderText(format(vidas_trabajo(), big.mark = "."))
   output$esperanza_vida <- renderText(esperanza_vida())
   output$edad_jubilacion <- renderText(edad_jubilacion())
+  
+  #ancho de ventana ----
+  ancho <- reactive({
+    req(length(input$dimension[1]) != 0)
+    req(input$dimension[1] > 0)
+    
+    input$dimension[1]
+  }) |> bindEvent(input$dimension)
+  
+  ancho_ventana <- ancho |> debounce(500)
+  
+  #graficos ----
+  output$grafico_millonarios <- renderPlot({
+    cantidad_x <- ancho_ventana()/50
+    # browser()
+    
+    millonarios |> 
+      slice(1:cantidad_x) |> 
+      mutate(nombre = factor(nombre, millonarios$nombre)) |> 
+      ggplot(aes(nombre, fortuna)) +
+      geom_point(size = 3) +
+      geom_point(size = 6, alpha = 0.35) +
+      geom_segment(aes(xend = nombre, yend = 0), linewidth = 1.5) +
+      geom_text(aes(label = miles(fortuna)), 
+                angle = 30, hjust = 0, size = 3, nudge_x = 0.3, nudge_y = 100, vjust = 0) +
+      scale_y_continuous(expand = expansion(c(0, 0.15)), labels = miles) +
+      theme_minimal() +
+      coord_cartesian(clip = "off") +
+      labs(y = "Fortuna (en millones de dólares)") +
+      theme(axis.text.x = element_text(size = 10, angle = 30, hjust = 1, color = color_texto),
+            axis.text.y = element_text(size = 10, angle = 90, hjust = 0.5, color = color_detalle),
+            axis.title.x = element_blank(),
+            panel.grid = element_line(color = color_detalle),
+            panel.grid.minor.y = element_blank(),
+            panel.grid.major.x = element_blank(),
+            text = element_text(color = color_texto)
+      ) 
+  })
   
 }
 

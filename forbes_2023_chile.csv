@@ -1,7 +1,0 @@
-rank;nombre;age;finalWorth;category;source;country;selfMade;year;fortuna_b_usd;fortuna_usd;fortuna_pesos
-65;Iris Fontbona;80;23100;Metals & Mining;Mining;Chile;FALSE;2023;23100;23100000000;22458282000000
-766;Horst Paulmann;88;3700;Fashion & Retail;Retail;Chile;TRUE;2023;3700;3700000000;3597214000000
-878;Julio Ponce Lerou;77;3300;Metals & Mining;Fertilizer;Chile;TRUE;2023;3300;3300000000;3208326000000
-1027;Sebastián Piñera;73;2900;Finance & Investments;Investments;Chile;TRUE;2023;2900;2900000000;2819438000000
-1575;Roberto Angelini Rossi;74;1900;Diversified;Forestry, mining;Chile;FALSE;2023;1900;1900000000;1847218000000
-1905;Patricia Angelini Rossi;68;1500;Diversified;Forestry, mining;Chile;FALSE;2023;1500;1500000000;1458330000000
