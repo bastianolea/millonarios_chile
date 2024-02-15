@@ -10,12 +10,14 @@ miles <- function(x) {
 
 
 #para obtener el precio del dólar, realizamos un web scraping del sitio del Banco Central de Chile
-library(rvest)
-library(polite)
+
 
 obtener_dolar <- function(scrapear = FALSE) {
   
   if (scrapear == TRUE) {
+    library(rvest)
+    library(polite)
+    
     banco <- session("https://si3.bcentral.cl/indicadoressiete/secure/IndicadoresDiarios.aspx")
     
     respuesta <- banco$response$status_code
@@ -44,7 +46,7 @@ obtener_dolar <- function(scrapear = FALSE) {
 # obtener_dolar()
 
 css <- function(text) {
-  tags$style(glue::glue(text, .open = "{{", .close = "}}"))
+  tags$style(glue(text, .open = "{{", .close = "}}"))
 }
 
 #detectar ancho de ventana ----
@@ -62,4 +64,9 @@ js_ancho_ventana <- function() {
                                     Shiny.onInputChange("dimension", dimension);
                                 });
                             '))
+}
+
+#deciles ----
+encontrar_decil <- function(casen_porcentajes_ingreso = NULL, ingreso = 500000) {
+  which(abs(casen_porcentajes_ingreso - ingreso) == min(abs(casen_porcentajes_ingreso - ingreso)))
 }
