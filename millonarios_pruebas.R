@@ -272,3 +272,13 @@ mayor_millonario$fortuna_pesos/poblacion_chile_2024
 cifra <- mayor_millonario$fortuna_pesos/1000000 #personas a las que les podría entregar 1 palo
 personas_extra <- cifra-poblacion_chile_2024
 millones_de_dolares_sobrantes <- ((personas_extra*1000000)/dolar)/1000000
+
+
+#datos millonario ----
+
+millonario <- millonarios |> slice(3)
+
+millonario$nombre
+millonario$rank; millonario$año
+millonario$familia == "Sí"
+millonario$categoria

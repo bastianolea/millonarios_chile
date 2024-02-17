@@ -318,10 +318,18 @@ server <- function(input, output) {
   )
   
   ## nombre millonario ----
-  output$nombre_millonario6 <- output$nombre_millonario5 <- output$nombre_millonario4 <- output$nombre_millonario3 <- output$nombre_millonario2 <- output$nombre_millonario <- renderText(input$millonario)
+  output$nombre_millonario7 <- output$nombre_millonario6 <- output$nombre_millonario5 <- output$nombre_millonario4 <- output$nombre_millonario3 <- output$nombre_millonario2 <- output$nombre_millonario <- renderText(input$millonario)
   output$nombre_millonario_coma <- renderText(paste0(input$millonario, ","))
   output$nombre_millonario_punto2 <- output$nombre_millonario_punto <- renderText(paste0(input$millonario, "."))
   
+  ## datos millonario ----
+  
+  millonario()
+  
+  millonario$nombre
+  millonario$rank; millonario$año
+  millonario$familia == "Sí"
+  millonario$categoria
   
   ## fortuna ----
   fortuna <- reactive(
