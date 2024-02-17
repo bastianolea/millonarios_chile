@@ -8,6 +8,7 @@ library(ggforce) #geom_circle
 options(scipen = 9999)
 
 source("funciones.R")
+degradado <- colorRampPalette(c("#628875", "#19663f", "#1a422e"))
 
 millonarios <- read_rds("millonarios_chile.rds")
 casen <- arrow::read_parquet("datos/casen2022/casen2022.parquet")
@@ -190,21 +191,22 @@ ggplot(data = NULL, aes(y = 1)) +
   theme(axis.text.x = element_text())
 
 
-                  
-### OK calcular ingresos de la mitad de chile ----
+
+### OK ingresos de la mitad de chile ----
 ingresos_mitad_baja = casen_deciles |> filter(decil <= 5) |> summarize(sum(suma_ingresos)) |> pull()
 ingresos_mitad_alta = casen_deciles |> filter(decil > 5) |> summarize(sum(suma_ingresos)) |> pull()
+ingresos_chile = casen_deciles |> summarize(sum(suma_ingresos)) |> pull()
 
 
 fortuna > ingresos_mitad_baja
 
 scales::percent(ingresos_mitad_baja/fortuna)
 
-#graficar esto! ----
+### #graficar  ----
 tibble("etiqueta" = c("La mitad de los ingresos\nde todos los chilenos", "Culiao"),
        "valor" = c(ingresos_mitad_baja, fortuna)) |> 
-ggplot(aes(valor, etiqueta, fill = etiqueta)) +
-geom_col() +
+  ggplot(aes(valor, etiqueta, fill = etiqueta)) +
+  geom_col() +
   scale_x_continuous(expand = expansion(0)) +
   scale_fill_manual(values = c("red", "blue")) +
   theme_minimal() +
@@ -212,3 +214,61 @@ geom_col() +
         panel.grid = element_blank(),
         axis.text.x = element_blank(), 
         axis.title = element_blank())
+
+
+#fortunas sumadas ----
+top_10_millonarios <- millonarios |> 
+  arrange(desc(fortuna)) |> 
+  slice_max(fortuna, n = 10, with_ties = F) |> 
+  mutate(#nombre = stringr::str_wrap(nombre, 20),
+    nombre = factor(nombre, rev(nombre)))
+
+top_10_millonarios
+
+top_10_millonarios |> 
+  ggplot(aes(x = 1, y = fortuna, fill = nombre))+ 
+  geom_bar(width = 0.2, stat = "identity",
+           color = "white", linewidth = 1)+
+  coord_polar(theta = "y", direction = 1, start = 3.3, clip = "off") +
+  xlim(c(0, 1.5)) +
+  geom_text(aes(x = 1.15, y = fortuna, 
+                               label = ifelse(nombre == "Iris Fontbona", as.character(nombre), "")),
+                           size = 2, hjust = 1,
+            position = position_stack(vjust = 0.5)) +
+  ggrepel::geom_text_repel(aes(x = 1.15, y = fortuna, 
+                               label = ifelse(nombre != "Iris Fontbona", as.character(nombre), "")), 
+                           size = 2, hjust = 0, 
+                           box.padding = 0, seed = 2024,
+                           position = position_stack(vjust = 0.5)) +
+  # scale_fill_brewer(palette = "GnBu")+
+  scale_fill_manual(values = degradado(length(top_10_millonarios$nombre)), 
+                    aesthetics = c("fill", "color")) +
+  theme_void() +
+  theme(legend.position = "none")
+#
+suma_top_10_fortunas <- sum(top_10_millonarios$fortuna_pesos)
+
+proporcion_fortunas_vs_chile = suma_top_10_fortunas/ingresos_chile
+
+format(proporcion_fortunas_vs_chile, digits = 2, decimal.mark =",")
+
+porcentaje_fortunas_vs_chile = ingresos_chile/suma_top_10_fortunas
+scales::percent(porcentaje_fortunas_vs_chile, accuracy = 1)
+
+
+#persona mas rica ----
+mayor_millonario <- millonarios |> slice_max(fortuna)
+
+precio_cesfam <- mean(c(7557000000, 6300000000, 7819818000, 4786766000))
+precio_hospital <- 100000000*dolar #http://www.supersalud.gob.cl/prensa/672/w3-printer-3445.html #https://www.eldinamo.cl/pais/2019/08/07/us10-000-millones-y-75-hospitales-este-es-el-plan-nacional-de-inversiones-2108-2022/
+precio_casa <- 47200000
+
+round(mayor_millonario$fortuna_pesos/precio_cesfam)
+round(mayor_millonario$fortuna_pesos/precio_hospital)
+round(mayor_millonario$fortuna_pesos/precio_casa)
+
+
+mayor_millonario$fortuna_pesos/poblacion_chile_2024
+cifra <- mayor_millonario$fortuna_pesos/1000000 #personas a las que les podría entregar 1 palo
+personas_extra <- cifra-poblacion_chile_2024
+millones_de_dolares_sobrantes <- ((personas_extra*1000000)/dolar)/1000000

@@ -35,15 +35,15 @@ obtener_dolar <- function(scrapear = FALSE) {
         as.numeric()
       
     } else {
-      dolar = 900
+      dolar = 959
     }
   } else {
-    dolar = 900
+    dolar = 959
   }
   return(dolar)
 }
 
-# obtener_dolar()
+# obtener_dolar(scrapear = T)
 
 css <- function(text) {
   tags$style(glue(text, .open = "{{", .close = "}}"))

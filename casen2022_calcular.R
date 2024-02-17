@@ -36,7 +36,7 @@ readr::write_rds(casen_porcentajes_ingreso, "datos/casen_cortes_deciles.rds")
 
 casen_deciles <- casen_ingresos |> 
   rowwise() |> 
-  mutate(decil = encontrar_decil(ytrabajocor)) |> 
+  mutate(decil = encontrar_decil(casen_porcentajes_ingreso, ytrabajocor)) |> 
   mutate(ytrabajocor_exp = ytrabajocor * expr) |>
   group_by(decil) |> 
   summarize(poblacion = sum(expr), #personas en casa decil

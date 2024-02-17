@@ -5,7 +5,7 @@ account: bastianoleah
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 11217078
-bundleId: 8251932
+bundleId: 8261115
 url: https://bastianoleah.shinyapps.io/millonarios_chile/
 version: 1
 asMultiple: FALSE
