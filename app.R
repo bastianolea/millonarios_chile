@@ -86,20 +86,23 @@ ui <- fluidPage(
     #título ----
     div(style = "padding-top: 12px; padding-bottom: 20px;",
         
-        titlePanel(h1("Millonarios de Chile"), 
+        titlePanel(
+          h1("Millonarios de Chile", 
+             style = glue("font-weight: bold; color: {color_destacado}")),
                    windowTitle = "Millonarios de Chile"),
         p("Aplicación interactiva sobre las fortunas de los empresarios más ricos de Chile", 
-          style = "margin-bottom: 8px; font-size: 80%;"),
+          style = "margin-bottom: 8px; font-size: 80%; opacity: 0.4;"),
         em(tags$a("Bastián Olea Herrera", 
                   href = "http://bastian.olea.biz",
-                  target = "_blank")),
+                  target = "_blank"),
+           style = "opacity: 0.4;"),
         
         div(style = "padding-top: 12px;",
         p("En toda economía de mercado existen personajes que acaparan vastas riquezas, ya sea por el éxito de sus negocios, por poseer recursos clave, haber recibido herencias o ser sucesores de otros magnates, o bien, por haber ejercido estrategias", em("cuestionables"), "para el enriquecimiento propio."),
         p("Con este visualizador puedes poner en perspectiva sus fortunas para así dimensionar un aspecto clave de la desigualdad en Chile y el mundo."),
         ),
         
-        hr()
+        # hr()
     )
   ),
   
@@ -169,18 +172,22 @@ ui <- fluidPage(
            h2("Pongamos la fortuna en contexto"),
            
            p("La fortuna de", textOutput("nombre_millonario6", inline = T), "corresponde a",
-             textOutput("fortuna_usd", inline = T), "millones de dólares, lo que es equivalente a",
-             cifra(textOutput("fortuna_millones", inline = T)), cifra("millones"), "de pesos chilenos"),
+             cifra(textOutput("fortuna_usd", inline = T)), cifra("millones de dólares,"), "lo que es equivalente a",
+             cifra(textOutput("fortuna", inline = T)), "en pesos chilenos."),
            
            ## repartir chile ----
-           p("Con todo ese dinero, se podría pagar un sueldo de quinientos mil pesos al", textOutput("sueldos_repartibles", inline = T) |> cifra(),
+           p("Si esta persona decidiera repartir su riqueza entre las",
+             tags$a("20 millones de personas que habitan Chile al 2024,",
+                    href = "https://www.ine.gob.cl/estadisticas/sociales/demografia-y-vitales/proyecciones-de-poblacion", target = "_blank"),
+             cifra("podría regalar aprox."), cifra(textOutput("bono_millonario", inline = T)), cifra("pesos a cada chileno/a."),
+             "O también podría pagar un sueldo de quinientos mil pesos al", textOutput("sueldos_repartibles", inline = T) |> cifra(),
              "de la población del país."),
            
            ## 50% de chile ----
            p("Si", strong("sumamos"), "todos los ingresos de", strong("la mitad de los chilenos"), "(50% inferior), 
              y comparamos todo ese dinero a la fortuna de", textOutput("nombre_millonario_coma", inline = T),
              "entonces su fortuna sería un", textOutput("fortuna_porcentaje_mitad_chile", inline = T) |> cifra(),
-             "más alta"),
+             "más alta que lo que ganaría la mitad de los trabajadores del país en un mes."),
            
            plotOutput("grafico_barras_50", height = 140),
            
@@ -325,7 +332,14 @@ server <- function(input, output) {
   output$fortuna_usd <- renderText(pesos(millonario()$fortuna))
   output$fortuna_millones <- renderText(pesos(fortuna()/1000000))
   
+  ### bono ----
   
+  bono_millonario <- reactive({
+    bono <- fortuna()/poblacion_chile_2024
+    # round(bono) |> floor(4)
+    signif(bono, digits = 3)
+  })
+  output$bono_millonario <- renderText(bono_millonario() |> pesos())
   
   # individuo -----
   sueldo <- reactive({
