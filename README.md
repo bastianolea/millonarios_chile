@@ -1,14 +1,29 @@
-
 # Millonarios de Chile
 
 [Aplicación web interactiva](https://bastianoleah.shinyapps.io/millonarios_chile/) sobre las fortunas de los empresarios más ricos de Chile.
 
 En toda economía de mercado existen personajes que acaparan vastas riquezas, ya sea por el éxito de sus negocios, por poseer recursos clave, haber recibido herencias o ser sucesores de otros magnates, o bien, por haber ejercido estrategias _cuestionables_ para el enriquecimiento propio.
 
-Con este visualizador puedes poner en perspectiva sus fortunas para así dimensionar un aspecto clave de la desigualdad en Chile y el mundo.
+Con este visualizador puedes poner en perspectiva las fortunas de los millonarios mas grandes del país, comparando sus fortunas con los ingresos de los chilenos, la teletón, tu propio sueldo, y más, para así dimensionar un aspecto clave de la desigualdad en Chile y el mundo. 
+
+
+![App millonarios de Chile 1](otros/pantallazos/millonarios_pantallazo_a.jpg)
+![App millonarios de Chile 2](otros/pantallazos/millonarios_pantallazo_b.jpg)
+![App millonarios de Chile 3](otros/pantallazos/millonarios_pantallazo_c.jpg)
+
+
 
 ### Fuentes
+Los datos usados en el visualizador se obtienen de diversas fuentes, principalmente la tabla de **Billonarios de Forbes** obtenida desde [Kaggle](https://www.kaggle.com/datasets/prasertk/forbes-worlds-billionaires-list-2023), pero posteriormente compilados de forma manual en el archivo `millonarios_chile` en la carpeta `datos`.
 
+Los datos sobre los **ingresos** del país, deciles de ingresos y otros se obtienen de la [encuesta Casen 2022](https://observatorio.ministeriodesarrollosocial.gob.cl/encuesta-casen-2022), cuyos datos son dercargados en el script `casen2022_importar.R`, y luego preprocesados y calculados en los scripts `casen2022_procesar.R` y `casen2022_calcular.R`.
+
+La **población de Chile** se obtiene desde las [proyecciones del Censo](https://www.ine.gob.cl/estadisticas/sociales/demografia-y-vitales/proyecciones-de-poblacion), cuyos datos se descargan, limpian y procesan en el script `poblacion_obtener.R`.
+
+El **precio del dólar** se obtiene mediante web scraping del sitio del [Banco Central](https://si3.bcentral.cl/indicadoressiete/secure/IndicadoresDiarios.aspx), por medio de la función `obtener_dolar()` en `funciones.R`.
+
+
+#### Fuentes de datos
 - Lista de billonarios de Forbes 2023, obtenido desde [Kaggle](https://www.kaggle.com/datasets/prasertk/forbes-worlds-billionaires-list-2023)
 - [El Mostrador](https://www.elmostrador.cl/mercados/sin-editar-mercado/2013/01/17/los-siete-multimillonarios-de-falabella-que-casi-nadie-conoce-fuera-de-chile/)
 - [Rankia](https://www.rankia.cl/blog/mejores-opiniones-chile/2190823-hombres-mas-ricos-chile)

@@ -1,4 +1,5 @@
 #descargar datos de población de Chile desde el INE para obtener la población del 2024
+# https://www.ine.gob.cl/estadisticas/sociales/demografia-y-vitales/proyecciones-de-poblacion
 
 #descargar proyecciones de población
 download.file("https://www.ine.gob.cl/docs/default-source/proyecciones-de-poblacion/cuadros-estadisticos/base-2017/ine_estimaciones-y-proyecciones-de-población-1992-2050_base-2017_base-de-datos.csv?sfvrsn=4022da86_11&download=true", 

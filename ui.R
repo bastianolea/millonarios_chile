@@ -306,8 +306,11 @@ fluidPage(
     column(12, style = "opacity: 0.5; font-size: 80%;",
            p("Diseñado y programado por",
              tags$a("Bastián Olea Herrera.", target = "_blank", href = "https://bastian.olea.biz")),
-           p(
-             "Código de fuente de esta app y del procesamiento de los datos",
+           p("Puedes explorar mis otras",
+             tags$a("aplicaciones interactivas sobre datos sociales aquí.",
+                    href = "https://bastianolea.github.io/shiny_apps/", target = "_blank")
+           ),
+           p("Código de fuente de esta app y del procesamiento de los datos",
              tags$a("disponible en GitHub.", target = "_blank", href = "https://github.com/bastianolea/millonarios_chile")
            ),
            
