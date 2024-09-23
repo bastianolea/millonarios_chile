@@ -1,4 +1,17 @@
 
+css <- function(text) {
+  tags$style(glue(text, .open = "{{", .close = "}}"))
+}
+
+cifra <- function(x) {
+  tags$span(x, style = glue("color: {color_destacado}; 
+                            font-size: 130%; 
+                            line-heignt: 0.2; display:inline-block; 
+                            margin-top: -80px;
+                            font-weight: bold;"))
+}
+
+
 pesos <- function(x) {
   paste0("$", format(x, big.mark = ".", decimal.mark = ",", trim = T))
 }
@@ -38,7 +51,7 @@ obtener_dolar <- function(scrapear = FALSE) {
       dolar = 959
     }
   } else {
-    dolar = 959
+    dolar = 927
   }
   return(dolar)
 }

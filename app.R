@@ -8,54 +8,44 @@ library(thematic)
 library(ggplot2)
 library(ggforce)
 library(shinycssloaders)
+library(ragg)
 
 
+# colores ----
 color_fondo = "#0D3C67"
-# color_texto = "#19C461"
-# color_fondo = "#243665"
 color_texto = "#8BD8BD"
-# color_fondo = "#2E3C7E"
-# color_texto = "#FBEAEB"
-# color_detalle = "#1a4c70"
 color_detalle = "#387285"
 color_claro = "#1a4c70"
 color_destacado = "#a9cf76"
 
 degradado <- colorRampPalette(c("#a9cf76", "#387285", "#387285"))
 
-options(spinner.type = 4, spinner.color = color_detalle)
 
-#tema automático
+# opciones ----
 thematic_shiny(font = "auto", bg = color_fondo, fg = color_texto, accent = color_texto)
-# thematic::thematic_on(bg = color_fondo, fg = color_texto, accent = color_texto)
-
+options(spinner.type = 4, spinner.color = color_detalle)
 options(scipen = 9999)
+options(shiny.useragg = TRUE)
 
-source("funciones.R")
 
-#datos ----
-# millonarios <- readr::read_csv("millonarios_2023_billionaires.csv")
-# millonarios <- read_csv2("millonarios_2023_chile.csv")
+# funciones ----
+source("funciones.R", local = TRUE)
+
+
+# datos ----
 millonarios <- read_rds("millonarios_chile.rds")
 casen_porcentajes_deciles <- readr::read_rds("datos/casen_cortes_deciles.rds")
-casen_deciles <- readr::read_csv2("datos/casen_deciles.csv")
+casen_deciles <- readr::read_csv2("datos/casen_deciles.csv", col_types = rep("d", 7))
 
 poblacion_chile_2024 = 20086377
 
+monto_teleton_2023 = 44000000000
+monto_chile_se_levanta_2024 = 5544577916
+
 dolar <- obtener_dolar(scrapear = F)
 
-css <- function(text) {
-  tags$style(glue(text, .open = "{{", .close = "}}"))
-}
 
-cifra <- function(x) {
-  tags$span(x, style = glue("color: {color_destacado}; 
-                            font-size: 130%; 
-                            line-heignt: 0.2; display:inline-block; 
-                            margin-top: -80px;
-                            font-weight: bold;"))
-}
-
+# —----
 ui <- fluidPage(
   title = "Millonarios de Chile",
   lang = "es",
@@ -79,8 +69,16 @@ ui <- fluidPage(
   
   css(".dropdown-toggle { font-size: 90%; font-weight: normal; padding-left: 12px;}"),
   css(".explicacion {
-      font-size: 80%; opacity: 0.65; line-height: 1.4;
+      font-size: 80%; opacity: 0.65; line-height: 1.3;
       }"),
+  
+  css("h2, h3 {
+      font-style: italic;
+  }"),
+  
+  css("h5 {
+      font-weight: bold;
+  }"),
   
   fluidRow(
     #título ----
@@ -89,17 +87,19 @@ ui <- fluidPage(
         titlePanel(
           h1("Millonarios de Chile", 
              style = glue("font-weight: bold; color: {color_destacado}")),
-                   windowTitle = "Millonarios de Chile"),
-        p("Aplicación interactiva sobre las fortunas de los empresarios más ricos de Chile", 
-          style = "margin-bottom: 8px; font-size: 80%; opacity: 0.4;"),
-        em(tags$a("Bastián Olea Herrera", 
-                  href = "http://bastian.olea.biz",
-                  target = "_blank"),
-           style = "opacity: 0.4;"),
+          windowTitle = "Millonarios de Chile"),
         
-        div(style = "padding-top: 12px;",
-        p("En toda economía de mercado existen personajes que acaparan vastas riquezas, ya sea por el éxito de sus negocios, por poseer recursos clave, haber recibido herencias o ser sucesores de otros magnates, o bien, por haber ejercido estrategias", em("cuestionables"), "para el enriquecimiento propio."),
-        p("Con este visualizador puedes poner en perspectiva sus fortunas para así dimensionar un aspecto clave de la desigualdad en Chile y el mundo."),
+        div(style = "opacity: 0.6;",
+            p("Aplicación interactiva sobre las fortunas de los empresarios más ricos de Chile", 
+              style = "margin-bottom: 8px; font-size: 80%;"),
+            em(tags$a("Bastián Olea Herrera", 
+                      href = "http://bastian.olea.biz",
+                      target = "_blank"))
+        ),
+        
+        div(style = "padding-top: 18px;",
+            p("En toda economía de mercado existen personajes que acaparan vastas riquezas, ya sea por el éxito de sus negocios, por poseer recursos clave, haber recibido herencias o ser sucesores de otros magnates, o bien, por haber ejercido estrategias", em("cuestionables"), "para el enriquecimiento propio."),
+            p("Con este visualizador puedes poner en perspectiva sus fortunas para así dimensionar un aspecto clave de la desigualdad en Chile y el mundo."),
         ),
         
         # hr()
@@ -133,7 +133,7 @@ ui <- fluidPage(
     column(12, align = "center", 
            #este gráfico tiene scroll horizontal si la pantalla es muy chica, pero sin agrandar el ancho del sitio
            div(style = "min-width: 300px; overflow-x: scroll;",
-           plotOutput("grafico_dona_millonarios", width="500px") |> withSpinner()
+               plotOutput("grafico_dona_millonarios", width="500px") |> withSpinner()
            )
     )
   ),
@@ -158,22 +158,50 @@ ui <- fluidPage(
   
   
   
-  # fortuna ----
+  # millonario ----
   ## input millonario ----
   fluidRow(
     column(4, align = "right",
-           h5("Seleccione un multimillonario"),
+           h5("Selecciona un millonario"),
            pickerInput("millonario", 
                        NULL, selected = "Sebastián Piñera Echeñique",
                        choices = millonarios$nombre, 
            )
     ),
+    
     column(8,
-           h2("Pongamos la fortuna en contexto"),
+           ### datos millonario ----
+           h2(textOutput("nombre_millonario7")),
+           
+           p(textOutput("nombre_millonario8", inline = T),
+             "es", textOutput("millonario_genero", inline = T), 
+             "que ha participado en empresas de los sectores", textOutput("millonario_categorias", inline = T)
+           ),
+           
+           htmlOutput("millonario_rank_forbes"),
+           
+           
+           
+           
+           ### fortuna millonario ----
+           
+           h3("Contextualizando su fortuna"),
            
            p("La fortuna de", textOutput("nombre_millonario6", inline = T), "corresponde a",
              cifra(textOutput("fortuna_usd", inline = T)), cifra("millones de dólares,"), "lo que es equivalente a",
              cifra(textOutput("fortuna", inline = T)), "en pesos chilenos."),
+           
+           ## comparar ----
+           p("Un 10% de esta fortuna equivaldría a",
+             cifra(textOutput("fortuna_comparar_teleton", inline = T)),
+             "veces el monto recaudado en la", cifra("Teletón 2023,"),
+             "o bien,",
+             cifra(textOutput("fortuna_comparar_chileselevanta", inline = T)),
+             "veces el dinero recaudado en", cifra("“Juntos, Chile se Levanta”"),
+             "para", 
+             tags$a("ayudar a los damnificados", href = "https://www.adnradio.cl/2024/02/17/juntos-chile-se-levanta-logra-millonaria-recaudacion-este-fue-el-monto-recaudado-en-el-evento-solidario-por-los-damnificados-en-los-incendios/", target = "_blank"), 
+             "por los incendios en la región de Valparaíso."
+           ),
            
            ## repartir chile ----
            p("Si esta persona decidiera repartir su riqueza entre las",
@@ -183,13 +211,17 @@ ui <- fluidPage(
              "O también podría pagar un sueldo de quinientos mil pesos al", textOutput("sueldos_repartibles", inline = T) |> cifra(),
              "de la población del país."),
            
+           
+           
            ## 50% de chile ----
-           p("Si", strong("sumamos"), "todos los ingresos de", strong("la mitad de los chilenos"), "(50% inferior), 
-             y comparamos todo ese dinero a la fortuna de", textOutput("nombre_millonario_coma", inline = T),
+           p("Si", strong("sumamos"), "todos los ingresos de", strong("la primera mitad de todos los chilenos;"), "es decir,
+             todo el dinero que ganan los aprox. 10 millones de trabajadoras y trabajadores chilenos que ganan sueldos",
+             tags$a("iguales o menores a 500 mil pesos (la mediana de ingresos),", href = "https://fundacionsol.cl/blog/actualidad-13/post/los-verdaderos-sueldos-de-chile-2023-7416", target = "_blank"),
+             "y comparamos todo ese dinero a la fortuna de", textOutput("nombre_millonario_coma", inline = T),
              "entonces su fortuna sería un", textOutput("fortuna_porcentaje_mitad_chile", inline = T) |> cifra(),
              "más alta que lo que ganaría la mitad de los trabajadores del país en un mes."),
            
-           plotOutput("grafico_barras_50", height = 140),
+           plotOutput("grafico_barras_50", height = 180),
            
            hr(),
     )
@@ -233,12 +265,19 @@ ui <- fluidPage(
   fluidRow(
     column(4, align = "right",
            ## inputs genero y edad ----
-           radioGroupButtons("genero", "Género", 
+           div(style = "margin-bottom: 18px; line-height: 1.3;",
+               h5("Ingresa tus datos",
+                  style = "margin-bottom: 0px;"),
+               em("de género y edad en que empezaste a trabajar para ajustar las estimaciones")
+           ),
+           radioGroupButtons("genero", 
+                             NULL, 
                              choices = c("Femenino", "Masculino"), 
                              size = "sm",
            ),
            
-           numericInput("edad_laboral", "A qué edad empezaste a trabajar",
+           numericInput("edad_laboral", 
+                        NULL,
                         value = 24, min = 10, max = 99, step = 1, width = "170px"
            ),
            
@@ -259,10 +298,15 @@ ui <- fluidPage(
            p("Tendrías que trabajar sin parar, todos los días, hasta el año ", textOutput("año_trabajado_final", inline = T)),
            
            ## cuantas vidas ---- 
-           p("Considerando que tu esperanza de vida actual es de", textOutput("esperanza_vida", inline = T), "años,
-           y que tu edad de jubilación será a los", textOutput("edad_jubilacion", inline = T), "años,", 
-           cifra("necesitarías trabajar"), cifra(textOutput("vidas_trabajadas", inline = T)),
-           cifra("vidas enteras"), "para alcanzar la fortuna de", textOutput("nombre_millonario_punto2", inline = T),
+           p("Considerando que la",
+             tags$a("esperanza de vida", 
+                    href = "https://cooperativa.cl/noticias/pais/poblacion/chile-alcanzo-un-nuevo-record-en-la-esperanza-de-vida-supero-los-81/2024-02-05/065352.html", target = "_blank"),
+             "de una persona de género", 
+             textOutput("genero", inline = T),
+             "es actualmente de", textOutput("esperanza_vida", inline = T), "años,
+           y que su edad de jubilación está fijada en los", textOutput("edad_jubilacion", inline = T), "años, entonces", 
+             cifra("necesitarías trabajar"), cifra(textOutput("vidas_trabajadas", inline = T)),
+             cifra("vidas enteras"), "sin gastar un solo peso para alcanzar la fortuna de", textOutput("nombre_millonario_punto2", inline = T),
            ),
            hr(),
            
@@ -282,23 +326,37 @@ ui <- fluidPage(
                     #este gráfico tiene scroll horizontal si la pantalla es muy chica, pero sin agrandar el ancho del sitio
                     div(style = "min-width: 300px; overflow-x: scroll;",
                         plotOutput("grafico_circulo_fortuna", width = "400px") |> withSpinner()
-                    ),
-                    hr()
+                    )
              )
            )
+    )
+  ),
+  
+  # conclusión ----
+  
+  fluidRow(
+    column(12,
+           hr(),
+           h2("Conclusiones"),
+           p("A trabajar, para que algún día seas millonari@ 🥲"),
+           hr(),
     )
   ),
   
   
   
   
+  
   ## firma ----
   fluidRow(
-    column(12, 
+    column(12, style = "opacity: 0.5; font-size: 80%;",
            p("Diseñado y programado por",
              tags$a("Bastián Olea Herrera.", target = "_blank", href = "https://bastian.olea.biz")),
-           p(
-             "Código de fuente de esta app y del procesamiento de los datos",
+           p("Puedes explorar mis otras",
+             tags$a("aplicaciones interactivas sobre datos sociales aquí.",
+                    href = "https://bastianolea.github.io/shiny_apps/", target = "_blank")
+           ),
+           p("Código de fuente de esta app y del procesamiento de los datos",
              tags$a("disponible en GitHub.", target = "_blank", href = "https://github.com/bastianolea/millonarios_chile")
            ),
            
@@ -309,6 +367,8 @@ ui <- fluidPage(
   
 )
 
+# —----
+
 server <- function(input, output) {
   
   # millonario ----
@@ -318,18 +378,29 @@ server <- function(input, output) {
   )
   
   ## nombre millonario ----
-  output$nombre_millonario7 <- output$nombre_millonario6 <- output$nombre_millonario5 <- output$nombre_millonario4 <- output$nombre_millonario3 <- output$nombre_millonario2 <- output$nombre_millonario <- renderText(input$millonario)
+  output$nombre_millonario8 <- output$nombre_millonario7 <- output$nombre_millonario6 <- output$nombre_millonario5 <- output$nombre_millonario4 <- output$nombre_millonario3 <- output$nombre_millonario2 <- output$nombre_millonario <- renderText(input$millonario)
   output$nombre_millonario_coma <- renderText(paste0(input$millonario, ","))
   output$nombre_millonario_punto2 <- output$nombre_millonario_punto <- renderText(paste0(input$millonario, "."))
   
   ## datos millonario ----
+
+  output$millonario_genero <- renderText(ifelse(millonario()$género == "m", "un empresario", "una empresaria"))
   
-  millonario()
+  output$millonario_categorias <- renderText({
+    categorias <- millonario()$categoria |> tolower() |> stringr::str_replace("(\\,)(?!.*\\,)", " y")
+    paste0(categorias, ".")
+    })
   
-  millonario$nombre
-  millonario$rank; millonario$año
-  millonario$familia == "Sí"
-  millonario$categoria
+  output$millonario_rank_forbes <- renderUI({
+    if (!is.na(millonario()$rank)) {
+      p("Ocupó el", cifra("puesto N°"), cifra(millonario()$rank), 
+        "en el listado", strong("Forbes", millonario()$año), "de las mayores fortunas a nivel mundial."
+        )
+    }
+  })
+  
+  # millonario$familia == "Sí"
+  
   
   ## fortuna ----
   fortuna <- reactive(
@@ -340,14 +411,29 @@ server <- function(input, output) {
   output$fortuna_usd <- renderText(pesos(millonario()$fortuna))
   output$fortuna_millones <- renderText(pesos(fortuna()/1000000))
   
-  ### bono ----
   
+  ### comparar fortuna ----
+  output$fortuna_comparar_teleton <- renderText({
+    cantidad <- (fortuna()*0.1)/monto_teleton_2023
+    round(cantidad, 1)
+  })
+  
+  # https://www.adnradio.cl/2024/02/17/juntos-chile-se-levanta-logra-millonaria-recaudacion-este-fue-el-monto-recaudado-en-el-evento-solidario-por-los-damnificados-en-los-incendios/
+  output$fortuna_comparar_chileselevanta <- renderText({
+    cantidad <- (fortuna()*0.1)/monto_chile_se_levanta_2024
+    round(cantidad, 1)
+  })
+  
+  
+  ### bono ----
   bono_millonario <- reactive({
     bono <- fortuna()/poblacion_chile_2024
     # round(bono) |> floor(4)
     signif(bono, digits = 3)
   })
   output$bono_millonario <- renderText(bono_millonario() |> pesos())
+  
+  
   
   # individuo -----
   sueldo <- reactive({
@@ -399,6 +485,9 @@ server <- function(input, output) {
   # https://cooperativa.cl/noticias/pais/poblacion/chile-alcanzo-un-nuevo-record-en-la-esperanza-de-vida-supero-los-81/2024-02-05/065352.html
   # https://www.df.cl/economia-y-politica/actualidad/efecto-millennials-edad-promedio-de-los-ocupados-sube-a-44-anos
   
+  
+  output$genero <- renderText(tolower(input$genero))
+  
   esperanza_vida = reactive(ifelse(input$genero == "Femenino", 83.5, 78.5))
   edad_jubilacion = reactive(ifelse(input$genero == "Masculino", 60, 65))
   
@@ -448,10 +537,13 @@ server <- function(input, output) {
   
   ### ingresos de la mitad de chile ----
   
-  ingresos_mitad_baja <-  reactive({
+  ingresos_mitad_baja <- reactive({
     casen_deciles |> filter(decil <= 5) |> summarize(sum(suma_ingresos)) |> pull()
   })
-  # ingresos_mitad_alta = casen_deciles |> filter(decil > 5) |> summarize(sum(suma_ingresos)) |> pull()
+  
+  ingresos_mitad_alta <- reactive({
+    casen_deciles |> filter(decil > 5) |> summarize(sum(suma_ingresos)) |> pull()
+  })
   
   fortuna_porcentaje_mitad_chile <- reactive({
     # browser()
@@ -479,7 +571,7 @@ server <- function(input, output) {
   
   output$top_fortunas_vs_chile <- renderText({
     proporcion_fortunas_vs_chile = suma_top_10_fortunas()/ingresos_chile()
-  format(proporcion_fortunas_vs_chile, digits = 2, decimal.mark =",")
+    format(proporcion_fortunas_vs_chile, digits = 2, decimal.mark =",")
   })
   
   output$top_fortunas_vs_chile_porcentaje <- renderText({
@@ -503,12 +595,12 @@ server <- function(input, output) {
   output$mayor_millonario_casas <- renderText(round(mayor_millonario()$fortuna_pesos/precio_casa) |> miles())
   
   bono_iris_fontbona <- reactive({
-  # mayor_millonario()$fortuna_pesos/poblacion_chile_2024 #plata que podría darle a cada chileno
-  beneficiados_bono <- mayor_millonario()$fortuna_pesos/1000000 #personas a las que les podría entregar 1 palo
-  beneficiados_extra <- beneficiados_bono - poblacion_chile_2024 #personas que sobran
-  millones_de_dolares_sobrantes <- ((beneficiados_extra * 1000000) / dolar) / 1000000 #millones de dolares sobrantes
-  
-  return(millones_de_dolares_sobrantes)
+    # mayor_millonario()$fortuna_pesos/poblacion_chile_2024 #plata que podría darle a cada chileno
+    beneficiados_bono <- mayor_millonario()$fortuna_pesos/1000000 #personas a las que les podría entregar 1 palo
+    beneficiados_extra <- beneficiados_bono - poblacion_chile_2024 #personas que sobran
+    millones_de_dolares_sobrantes <- ((beneficiados_extra * 1000000) / dolar) / 1000000 #millones de dolares sobrantes
+    
+    return(millones_de_dolares_sobrantes)
   })
   
   output$bono_iris_sobrantes <- renderText(round(bono_iris_fontbona()) |> pesos())
@@ -610,6 +702,12 @@ server <- function(input, output) {
     proporcion_farkas = farkas()/fortuna()
     proporcion_sueldo_fortuna = sueldo_vital()/fortuna()
     
+    # browser()
+    
+    mostrar_sueldo = ifelse(
+      proporcion_sueldo_fortuna > 0.00006, 
+      TRUE, FALSE)
+    
     mostrar_farkas = ifelse(
       (proporcion_farkas * 0.10) / (proporcion_fortuna * 0.01) > 0.9, FALSE, TRUE)
     # browser()
@@ -627,11 +725,22 @@ server <- function(input, output) {
       annotate("text", label = paste("1% de", input$millonario), x = 0.9935, y = 1.0066,  hjust = 0)
     
     if (mostrar_farkas) {
-      p <- p + annotate("text", label = "10% de Farkas", x = 0.9993 + (proporcion_farkas * 0.10), 
-               y = 1.0002 - (proporcion_farkas * 0.10), hjust = 0)
+      if (mostrar_sueldo) {
+      p <- p + annotate("text", label = "10% de Farkas", 
+                        x = 0.9993 + (proporcion_farkas * 0.10), 
+                        y = 1.0002 - (proporcion_farkas * 0.10), hjust = 0)
+      } else {
+        p <- p + annotate("text", label = "10% de Farkas", 
+                          x = 0.9993 + (proporcion_farkas * 0.30), 
+                          y = 1.0002 - (proporcion_farkas * 0.30), hjust = 0)
+      }
     }
+    
+    if (mostrar_sueldo) {
     p <- p + 
-      annotate("text", label = "Tu", x = 1.00004 + proporcion_sueldo_fortuna, y = 0.9996 - proporcion_sueldo_fortuna, hjust = 0) +
+      annotate("text", label = "Tu", x = 1.00004 + proporcion_sueldo_fortuna, y = 0.9996 - proporcion_sueldo_fortuna, hjust = 0)
+    }
+    p <- p +
       coord_fixed(clip = "off") +
       theme_void()
     p
@@ -642,16 +751,16 @@ server <- function(input, output) {
   ## barras chile vs millonario ----
   output$grafico_barras_50 <- renderPlot({
     # division <- fortuna()/ingresos_mitad_baja()
-
-    tabla <- tibble("etiqueta" = c("La mitad de los ingresos\nde todos los chilenos", input$millonario),
-           "valor" = c(ingresos_mitad_baja(), fortuna()))
+    
+    tabla <- tibble("etiqueta" = c("La mitad de los ingresos\nde todos los chilenos (50% inferior)", "Mitad superior de ingresos\nde todos los chilenos (50%superior)", input$millonario),
+                    "valor" = c(ingresos_mitad_baja(), ingresos_mitad_alta(), fortuna()))
     
     tabla |> 
       mutate(etiqueta = factor(etiqueta, tabla$etiqueta)) |> 
       ggplot(aes(valor, etiqueta, fill = etiqueta)) +
       geom_col(width = 0.5) +
       scale_x_continuous(expand = expansion(0)) +
-      scale_fill_manual(values = c(color_detalle, color_destacado)) +
+      scale_fill_manual(values = c(color_detalle, color_detalle, color_destacado)) +
       theme_minimal() +
       theme(legend.position = "none", 
             axis.text.y = element_text(color = color_texto),
@@ -661,4 +770,4 @@ server <- function(input, output) {
   }, res = 180)
 }
 
-shinyApp(ui = ui, server = server)
+shinyApp(ui, server)
