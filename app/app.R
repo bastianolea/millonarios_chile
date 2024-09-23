@@ -34,8 +34,8 @@ source("funciones.R", local = TRUE)
 
 # datos ----
 millonarios <- read_rds("millonarios_chile.rds")
-casen_porcentajes_deciles <- readr::read_rds("datos/casen_cortes_deciles.rds")
-casen_deciles <- readr::read_csv2("datos/casen_deciles.csv", col_types = rep("d", 7))
+casen_porcentajes_deciles <- readr::read_rds("casen_cortes_deciles.rds")
+casen_deciles <- readr::read_csv2("casen_deciles.csv", col_types = rep("d", 7))
 
 poblacion_chile_2024 = 20086377
 
